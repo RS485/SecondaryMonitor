@@ -13,13 +13,10 @@ import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.profiler.Profiler;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.MovementInput;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.EnumGameType;
-import net.minecraft.world.WorldSettings;
-import net.minecraft.world.WorldType;
-import net.minecraft.world.storage.SaveHandlerMP;
+import net.minecraft.util.Session;
 
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.Display;
@@ -34,6 +31,7 @@ import rs485.secondarymonitor.secondjvm.console.InputOutputHelper;
 import rs485.secondarymonitor.secondjvm.gui.ChatGui;
 import rs485.secondarymonitor.secondjvm.gui.GuiPlayerSkin;
 import rs485.secondarymonitor.secondjvm.gui.ISDMGui;
+import rs485.secondarymonitor.secondjvm.gui.PlayerInventoryGui;
 import rs485.secondarymonitor.secondjvm.gui.RenderHelper;
 
 public class Main {
@@ -46,9 +44,12 @@ public class Main {
 	private int mousePos_Y = 20;
 	private boolean displayMouse = true;
 	
+	private EntityPlayerSP player;
+	
 	//All available GUIs
 	public ChatGui chatGui = new ChatGui();
 	public GuiPlayerSkin skinGui = new GuiPlayerSkin();
+	public PlayerInventoryGui invGui = new PlayerInventoryGui();
 	
 	public Main(Minecraft mc) {
 		this.mc = mc;
@@ -110,6 +111,7 @@ public class Main {
         
         
         GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
+		RenderHelper.enableStandardItemLighting();
         GL11.glPushMatrix();
         RenderHelper.drawRect(0, 0, mc.displayHeight, mc.displayWidth, 0xff000000);
        	GL11.glPopMatrix();
@@ -126,6 +128,7 @@ public class Main {
 	    	RenderHelper.drawTexturedModalRect(0, 0, 0, 0, 128 * 2, 128 * 2);
 	       	GL11.glPopMatrix();
         }
+		RenderHelper.disableStandardItemLighting();
 
 		
 		GL11.glFlush();
@@ -223,6 +226,7 @@ public class Main {
 		InputOutputHelper.instance().gameStarted();
 		currentGui.add(chatGui);
 		currentGui.add(skinGui);
+		currentGui.add(invGui);
 		ScaledResolution scaledresolution = new ScaledResolution(mc.gameSettings, mc.displayWidth, mc.displayHeight);
 		mousePos_X = scaledresolution.getScaledWidth() / 2;
 		mousePos_Y = scaledresolution.getScaledHeight() / 2;
@@ -239,10 +243,28 @@ public class Main {
 	public void setMouseDisplay(boolean flag) {
 		displayMouse = flag;
 	}
-	
+
+	public EntityPlayerSP getPlayer() {
+		if(player == null) {
+			String nameString = mc.getSession().getUsername();
+			nameString = nameString.substring(0, nameString.length() - 4);
+			player = new EntityPlayerSP(mc, mc.theWorld, new Session(nameString, ""), 0);
+			player.movementInput = new MovementInput();
+			player.movementInput.moveForward = 0.5F;
+		}
+		return player;
+	}
+
 	public static Main instance(Minecraft mc) {
 		if(instance == null) {
 			instance = new Main(mc);
+		}
+		return instance;
+	}
+	
+	public static Main instance() {
+		if(instance == null) {
+			throw new NullPointerException();
 		}
 		return instance;
 	}

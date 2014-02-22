@@ -15,9 +15,10 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.network.NetworkMod;
 
 @Mod(name="Secondary Monitor Mod", modid = "SDM")
-@NetworkMod(clientSideRequired=true, serverSideRequired=true, channels="SDM", packetHandler=PacketHandler.class)
+@NetworkMod(clientSideRequired=true, serverSideRequired=true, channels=SecondaryMonitor.SECONDARY_MONITOR_CHANNEL_NAME, packetHandler=PacketHandler.class)
 public class SecondaryMonitor {
 	
+	public static final String SECONDARY_MONITOR_CHANNEL_NAME = "SDM";
 	private Logger log;
 	private Logger log2;
 	private LoggingOutStream stream;
@@ -26,6 +27,7 @@ public class SecondaryMonitor {
 	public static SecondaryMonitor mod;
 
 	public SecondaryMonitor() {
+		PacketHandler.intialize();
 		ConsolePacketHandler.intialize();
 	}
 	

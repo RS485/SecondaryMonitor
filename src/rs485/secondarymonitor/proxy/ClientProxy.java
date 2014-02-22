@@ -18,7 +18,8 @@ import rs485.secondarymonitor.connection.abstractpackets.ConsolePacket;
 import rs485.secondarymonitor.renderer.MinecraftInfoRenderer;
 import rs485.secondarymonitor.secondjvm.asm.SDMSecondGuiTweaker;
 import rs485.secondarymonitor.tick.PacketProcessorTick;
-import rs485.secondarymonitor.tick.RenderTickHandler;
+import rs485.secondarymonitor.tick.ClientTickHandler;
+import rs485.secondarymonitor.tick.ServerTickHandler;
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.registry.TickRegistry;
 import cpw.mods.fml.relauncher.Side;
@@ -33,7 +34,8 @@ public class ClientProxy implements IProxy, ISendConsolePacket {
 	@Override
 	public void init(SecondaryMonitor mod) {
 		MinecraftInfoRenderer.init();
-		TickRegistry.registerTickHandler(new RenderTickHandler(mod, this), Side.CLIENT);
+		TickRegistry.registerTickHandler(new ClientTickHandler(mod, this), Side.CLIENT);
+		TickRegistry.registerTickHandler(new ServerTickHandler(), Side.SERVER);
 		packetProcessor = new PacketProcessorTick();
 		TickRegistry.registerTickHandler(packetProcessor, Side.CLIENT);
 		RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
@@ -122,7 +124,10 @@ public class ClientProxy implements IProxy, ISendConsolePacket {
 	@Override
 	public void sendConsolePacket(ConsolePacket packet) {
 		packet.create();
-		byte[] data = packet.getData();
+		sendConsolePacket(packet.getData());
+	}
+
+	public void sendConsolePacket(byte[] data) {
 		try {
 			sender.writeInt(data.length);
 			sender.write(data);

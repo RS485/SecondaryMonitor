@@ -62,7 +62,7 @@ public class RenderHelper {
 		float prevYawHead 		= entity.rotationYawHead;
 
 		GL11.glRotatef(135.0F, 0.0F, 1.0F, 0.0F);
-		net.minecraft.client.renderer.RenderHelper.enableStandardItemLighting();
+		enableStandardItemLighting();
 		GL11.glRotatef(-135.0F, 0.0F, 1.0F, 0.0F);
 		GL11.glRotatef(-((float)Math.atan((double)(yRotate / 40.0F))) * 20.0F, 1.0F, 0.0F, 0.0F);
 
@@ -83,7 +83,7 @@ public class RenderHelper {
 		entity.rotationYawHead 	= prevYawHead;
 
 		GL11.glPopMatrix();
-		net.minecraft.client.renderer.RenderHelper.disableStandardItemLighting();
+		disableStandardItemLighting();
 		GL11.glDisable(GL12.GL_RESCALE_NORMAL);
 		OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit);
 		GL11.glDisable(GL11.GL_TEXTURE_2D);
@@ -127,5 +127,17 @@ public class RenderHelper {
 		tessellator.addVertexWithUV((double)(x + width), (double)(y + 0), (double)zLevel, (double)((float)(u + width) * f), (double)((float)(v + 0) * f1));
 		tessellator.addVertexWithUV((double)(x + 0), (double)(y + 0), (double)zLevel, (double)((float)(u + 0) * f), (double)((float)(v + 0) * f1));
 		tessellator.draw();
+	}
+
+	public static void enableStandardItemLighting() {
+		net.minecraft.client.renderer.RenderHelper.enableStandardItemLighting();
+	}
+
+	public static void disableStandardItemLighting() {
+		net.minecraft.client.renderer.RenderHelper.disableStandardItemLighting();
+	}
+	
+	public static void enableGUIStandardItemLighting() {
+		net.minecraft.client.renderer.RenderHelper.enableGUIStandardItemLighting();
 	}
 }

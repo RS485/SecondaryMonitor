@@ -19,14 +19,14 @@ import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.ITickHandler;
 import cpw.mods.fml.common.TickType;
 
-public class RenderTickHandler implements ITickHandler {
+public class ClientTickHandler implements ITickHandler {
 
 	private final SecondaryMonitor mod;
 	private ClientProxy proxy;
 	private List<ChatLine> oldLines = new ArrayList<ChatLine>();
 	private boolean isMouseDisplay = false;
 	
-	public RenderTickHandler(SecondaryMonitor mod, ClientProxy proxy) {
+	public ClientTickHandler(SecondaryMonitor mod, ClientProxy proxy) {
 		this.mod = mod;
 		this.proxy = proxy;
 	}
