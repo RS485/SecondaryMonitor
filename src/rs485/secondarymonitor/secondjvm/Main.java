@@ -121,7 +121,7 @@ public class Main {
 		}
 		
 		Display.setResizable(true);
-		Display.setTitle("Seondary Monitor Minecraft 1.6.4");
+		Display.setTitle("Secondary Monitor Minecraft 1.6.4");
 		mc.getLogAgent().logInfo("LWJGL Version: " + Sys.getVersion());
 		
 		if(Util.getOSType() != EnumOS.MACOS) {
