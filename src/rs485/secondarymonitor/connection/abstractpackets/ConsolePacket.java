@@ -33,7 +33,7 @@ public abstract class ConsolePacket {
 		}
 		data = bytes.toByteArray();
 	}
-	
+
 	public abstract boolean needMainThread();
 	public abstract void readData(DataInputStream data) throws IOException;
 	public abstract void processPacket();

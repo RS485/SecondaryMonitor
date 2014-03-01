@@ -16,5 +16,9 @@ public class ServerProxy implements IProxy {
 	public boolean isSecondJVM() {
 		return false;
 	}
-	
+
+	@Override
+	public void updatePlayerData() {
+		
+	}
 }

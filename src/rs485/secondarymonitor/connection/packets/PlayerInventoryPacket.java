@@ -12,7 +12,6 @@ import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import rs485.secondarymonitor.connection.abstractpackets.ConsolePacket;
 import rs485.secondarymonitor.secondjvm.Main;
-import cpw.mods.fml.client.FMLClientHandler;
 
 @Accessors(chain=true)
 public class PlayerInventoryPacket extends ConsolePacket {
@@ -61,12 +60,14 @@ public class PlayerInventoryPacket extends ConsolePacket {
 	
 	@Override
 	public void processPacket() {
+		Main.instance().playerwriteLock.lock();
 		for(int i=0;i<armor.length;i++) {
 			Main.instance().getPlayer().inventory.armorInventory[i] = armor[i];
 		}
 		for(int i=0;i<inventory.length;i++) {
 			Main.instance().getPlayer().inventory.mainInventory[i] = inventory[i];
 		}
+		Main.instance().playerwriteLock.unlock();
 	}
 	
 	@Override

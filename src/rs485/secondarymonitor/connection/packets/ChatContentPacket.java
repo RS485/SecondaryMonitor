@@ -42,8 +42,8 @@ public class ChatContentPacket extends ConsolePacket {
 	
 	@Override
 	public void processPacket() {
-		Main.instance(null).chatGui.chatList.clear();
-		Main.instance(null).chatGui.chatList.addAll(getLines());
+		Main.instance().chatGui.chatList.clear();
+		Main.instance().chatGui.chatList.addAll(getLines());
 	}
 	
 	@Override

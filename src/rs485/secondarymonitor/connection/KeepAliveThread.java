@@ -7,6 +7,7 @@ public class KeepAliveThread extends Thread {
 	public KeepAliveThread(ISendConsolePacket sender) {
 		this.sender = sender;
 		this.setDaemon(true);
+		this.setName("[SDM] Keep Alive Thread");
 		this.start();
 	}
 	

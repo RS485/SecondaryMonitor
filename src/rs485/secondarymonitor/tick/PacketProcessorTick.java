@@ -24,11 +24,7 @@ public class PacketProcessorTick implements ITickHandler, IHandlePacket {
 		synchronized(packets) {
 			while(!packets.isEmpty()) {
 				ConsolePacket packet = packets.poll();
-				try {
-					ConsolePacketHandler.onPacketData(packet);
-				} catch(IOException e) {
-					e.printStackTrace();
-				}
+				ConsolePacketHandler.onPacketData(packet);
 			}
 		}
 	}
@@ -44,21 +40,20 @@ public class PacketProcessorTick implements ITickHandler, IHandlePacket {
 	}
 
 	@Override
-	public void handlePacket(DataInputStream data) {
-		int packetID;
-		try {
-			packetID = data.readInt();
-			final ConsolePacket packet = ConsolePacketHandler.packetlist.get(packetID).template();
-			packet.readData(data);
-			if(packet.needMainThread()) {
-				synchronized(packets) {
-					packets.add(packet);
-				}
-			} else {
-				ConsolePacketHandler.onPacketData(packet);
+	public void handlePacket(DataInputStream data) throws IOException {
+		int packetID = data.readInt();
+		final ConsolePacket packet = ConsolePacketHandler.packetlist.get(packetID).template();
+		packet.readData(data);
+		if(packet.needMainThread()) {
+			synchronized(packets) {
+				packets.add(packet);
 			}
-		} catch(IOException e) {
-			e.printStackTrace();
+		} else {
+			new Thread() {
+				public void run() {
+					ConsolePacketHandler.onPacketData(packet);
+				}
+			}.start();
 		}
 	}
 }

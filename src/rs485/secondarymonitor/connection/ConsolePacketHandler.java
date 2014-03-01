@@ -1,6 +1,9 @@
 package rs485.secondarymonitor.connection;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,6 +14,7 @@ import java.util.Map;
 
 import lombok.SneakyThrows;
 import rs485.secondarymonitor.connection.abstractpackets.ConsolePacket;
+import rs485.secondarymonitor.proxy.MainProxy;
 
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
@@ -46,16 +50,19 @@ public class ConsolePacketHandler {
 
 		int currentid = 0;
 
+		PrintWriter file = new PrintWriter(new FileOutputStream(new File("1-Packets-" + (MainProxy.isSecondJVM() ? "Snd" : "Fst") + ".dump")), true);
 		for (ClassInfo c : classes) {
 			final Class<?> cls = c.load();
 			final ConsolePacket instance = (ConsolePacket) cls.getConstructors()[0].newInstance(currentid);
 			packetlist.add(instance);
 			packetmap.put((Class<? extends ConsolePacket>) cls, instance);
+			file.write(currentid + ":\t" + cls.getSimpleName() + "\n");
 			currentid++;
 		}
+		file.close();
 	}
 
-	public static void onPacketData(final ConsolePacket packet) throws IOException {
+	public static void onPacketData(final ConsolePacket packet) {
 		try {
 			packet.processPacket();
 		} catch(Exception e) {

@@ -1,6 +1,22 @@
 package rs485.secondarymonitor;
 
-import java.io.IOException;
+/**
+ * Feature TODO list:
+ * Opis Map Overlay on second screen
+ * Allow MiniMap full screen
+ * Implement Minimap controlls
+ * Waila support on Second display
+ * Online Player List With entity rendering player coordinates and dimension
+ * Item Tooltips for player inventory
+ * Mod List
+ * Modify Crash reports to clarify that this mod is experimental
+ * Implement dynamic mod load system, to easily fix incompatible mods.
+ * 
+ * Feature Ideas (not decided whether they get implemented or not)
+ * ComputerCraft peripheral for user specific information on screen. (Turtle peipheral)
+ * Tabs
+ */
+
 import java.util.logging.Logger;
 
 import rs485.secondarymonitor.connection.ConsolePacketHandler;
@@ -21,11 +37,11 @@ public class SecondaryMonitor {
 	public static final String SECONDARY_MONITOR_CHANNEL_NAME = "SDM";
 	private Logger log;
 	private Logger log2;
-	private LoggingOutStream stream;
+	public LoggingOutStream stream;
 	
-	@Instance
+	@Instance(value="SDM")
 	public static SecondaryMonitor mod;
-
+	
 	public SecondaryMonitor() {
 		PacketHandler.intialize();
 		ConsolePacketHandler.intialize();
@@ -39,14 +55,5 @@ public class SecondaryMonitor {
 		log2.setParent(log);
 		stream = new LoggingOutStream(log2);
 		MainProxy.proxy.init(this);
-	}
-	
-	public void logFromSecondMC(byte[] bytes) {
-		try {
-			stream.write(bytes);
-			stream.flush();
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
 	}
 }

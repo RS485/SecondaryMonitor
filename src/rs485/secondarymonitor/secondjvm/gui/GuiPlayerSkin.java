@@ -11,12 +11,14 @@ public class GuiPlayerSkin implements ISDMGui {
 	@Override
 	public void renderGui(Minecraft mc) {
 		GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+		Main.instance().lockPlayer();
 		if(Main.instance().getPlayer() != null) {
 			Main.instance().getPlayer().updateEntityActionState();
 			Main.instance().getPlayer().onLivingUpdate();
 			Main.instance().getPlayer().movementInput.moveForward = 0F;
 			RenderHelper.renderEntity(120, 140, 40, -100, 2, Main.instance().getPlayer());
 		}
+		Main.instance().unlockPlayer();
 	}
 	
 	@Override

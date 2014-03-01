@@ -1,5 +1,7 @@
 package rs485.secondarymonitor.secondjvm.gui;
 
+import org.lwjgl.opengl.GL11;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
@@ -16,6 +18,9 @@ public class PlayerInventoryGui implements ISDMGui {
 		mc.renderEngine.bindTexture(INVENTORY_GUI);
 		RenderHelper.drawTexturedModalRect(150, 50, 0, 0, 200, 89);
 		RenderHelper.enableGUIStandardItemLighting();
+		GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glDepthMask(true);
+		Main.instance().lockPlayer();
 		for(int i=0;i<4;i++) {
 			ItemStack stack = Main.instance().getPlayer().inventory.armorInventory[i];
 			itemRenderer.renderItemAndEffectIntoGUI(mc.fontRenderer, mc.getTextureManager(), stack, 157, 112 - i*18);
@@ -31,6 +36,7 @@ public class PlayerInventoryGui implements ISDMGui {
 				if(stack != null) itemRenderer.renderItemOverlayIntoGUI(mc.fontRenderer, mc.renderEngine, stack, 182 + x*18, 58 - 18 + y*18, stack.stackSize > 1 ? Integer.toString(stack.stackSize) : "");
 			}
 		}
+		Main.instance().unlockPlayer();
 	}
 	
 	@Override

@@ -1,50 +1,90 @@
 package rs485.secondarymonitor.secondjvm;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.audio.SoundManager;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.gui.LoadingScreenRenderer;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.gui.achievement.GuiAchievement;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.client.particle.EffectRenderer;
 import net.minecraft.client.renderer.EntityRenderer;
+import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderBlocks;
+import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.client.resources.FoliageColorReloadListener;
+import net.minecraft.client.resources.GrassColorReloadListener;
+import net.minecraft.client.resources.LanguageManager;
+import net.minecraft.client.resources.ResourcePackRepository;
+import net.minecraft.client.resources.SimpleReloadableResourceManager;
+import net.minecraft.client.resources.data.AnimationMetadataSection;
+import net.minecraft.client.resources.data.AnimationMetadataSectionSerializer;
+import net.minecraft.client.resources.data.FontMetadataSection;
+import net.minecraft.client.resources.data.FontMetadataSectionSerializer;
+import net.minecraft.client.resources.data.LanguageMetadataSection;
+import net.minecraft.client.resources.data.LanguageMetadataSectionSerializer;
+import net.minecraft.client.resources.data.PackMetadataSection;
+import net.minecraft.client.resources.data.PackMetadataSectionSerializer;
+import net.minecraft.client.resources.data.TextureMetadataSection;
+import net.minecraft.client.resources.data.TextureMetadataSectionSerializer;
+import net.minecraft.client.settings.GameSettings;
+import net.minecraft.stats.StatFileWriter;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.EnumOS;
+import net.minecraft.util.MouseHelper;
 import net.minecraft.util.MovementInput;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Session;
+import net.minecraft.util.Util;
+import net.minecraft.world.chunk.storage.AnvilSaveConverter;
+import net.minecraftforge.client.ForgeHooksClient;
+import net.minecraftforge.client.GuiIngameForge;
 
+import org.lwjgl.LWJGLException;
+import org.lwjgl.Sys;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 
 import rs485.secondarymonitor.connection.ConsolePacketHandler;
 import rs485.secondarymonitor.connection.packets.ShutdownPacket;
-import rs485.secondarymonitor.proxy.ClientProxy;
 import rs485.secondarymonitor.proxy.MainProxy;
-import rs485.secondarymonitor.secondjvm.console.InputOutputHelper;
 import rs485.secondarymonitor.secondjvm.gui.ChatGui;
 import rs485.secondarymonitor.secondjvm.gui.GuiPlayerSkin;
 import rs485.secondarymonitor.secondjvm.gui.ISDMGui;
 import rs485.secondarymonitor.secondjvm.gui.PlayerInventoryGui;
 import rs485.secondarymonitor.secondjvm.gui.RenderHelper;
+import rs485.secondarymonitor.secondjvm.mapwriter.MapWriterHelper;
+import cpw.mods.fml.client.FMLClientHandler;
 
 public class Main {
 	
 	private Minecraft mc;
 	private boolean init;
 	private List<ISDMGui> currentGui = new ArrayList<ISDMGui>();
-	private static final ResourceLocation MOUSE_CURSOR = new ResourceLocation("secondarymonitor", "textures/pointer.png");
-	private int mousePos_X = 20;
-	private int mousePos_Y = 20;
-	private boolean displayMouse = true;
 	
 	private EntityPlayerSP player;
+	protected final ReentrantReadWriteLock playerLock = new ReentrantReadWriteLock();
+	public final Lock playerreadLock = playerLock.readLock();
+	public final Lock playerwriteLock = playerLock.writeLock();
 	
 	//All available GUIs
 	public ChatGui chatGui = new ChatGui();
@@ -55,8 +95,137 @@ public class Main {
 		this.mc = mc;
 	}
 	
+    public void startGame() throws LWJGLException {
+		System.out.println("Start Game 1");
+		mc.gameSettings = new GameSettings(mc, new File("ThisIsAnNotExistingDirectory-74389205623546239")); // TODO: Sync Settings
+		
+		if(mc.gameSettings.overrideHeight > 0 && mc.gameSettings.overrideWidth > 0) {
+			mc.displayWidth = mc.gameSettings.overrideWidth;
+			mc.displayHeight = mc.gameSettings.overrideHeight;
+		}
+		
+		if(mc.isFullScreen()) {
+			Display.setFullscreen(true);
+			mc.displayWidth = Display.getDisplayMode().getWidth();
+			mc.displayHeight = Display.getDisplayMode().getHeight();
+			
+			if(mc.displayWidth <= 0) {
+				mc.displayWidth = 1;
+			}
+			
+			if(mc.displayHeight <= 0) {
+				mc.displayHeight = 1;
+			}
+		} else {
+			Display.setDisplayMode(new DisplayMode(mc.displayWidth, mc.displayHeight));
+		}
+		
+		Display.setResizable(true);
+		Display.setTitle("Seondary Monitor Minecraft 1.6.4");
+		mc.getLogAgent().logInfo("LWJGL Version: " + Sys.getVersion());
+		
+		if(Util.getOSType() != EnumOS.MACOS) {
+			try {
+				System.out.println(new File(mc.mcDataDir, "/icon.png").getAbsolutePath());
+				Display.setIcon(new ByteBuffer[] { mc.readImage(new File(mc.mcDataDir, "/icon.png")) });
+			} catch(IOException ioexception) {
+				ioexception.printStackTrace();
+			}
+		}
+		
+		try {
+			ForgeHooksClient.createDisplay();
+		} catch(LWJGLException lwjglexception) {
+			lwjglexception.printStackTrace();
+			
+			try {
+				Thread.sleep(1000L);
+			} catch(InterruptedException interruptedexception) {
+				;
+			}
+			
+			if(mc.isFullScreen()) {
+				mc.updateDisplayMode();
+			}
+			
+			Display.create();
+		}
+		
+		OpenGlHelper.initializeTextures();
+		mc.guiAchievement = new GuiAchievement(mc);
+		mc.metadataSerializer_.registerMetadataSectionType(new TextureMetadataSectionSerializer(), TextureMetadataSection.class);
+		mc.metadataSerializer_.registerMetadataSectionType(new FontMetadataSectionSerializer(), FontMetadataSection.class);
+		mc.metadataSerializer_.registerMetadataSectionType(new AnimationMetadataSectionSerializer(), AnimationMetadataSection.class);
+		mc.metadataSerializer_.registerMetadataSectionType(new PackMetadataSectionSerializer(), PackMetadataSection.class);
+		mc.metadataSerializer_.registerMetadataSectionType(new LanguageMetadataSectionSerializer(), LanguageMetadataSection.class);
+		mc.saveLoader = new AnvilSaveConverter(new File(mc.mcDataDir, "saves"));
+		String loc = mc.fileResourcepacks.getAbsolutePath();
+		String[] s = loc.split("SDM_mcDir");
+		loc = s[0] + "." + s[1];
+		mc.mcResourcePackRepository = new ResourcePackRepository(new File(loc), mc.mcDefaultResourcePack, mc.metadataSerializer_, mc.gameSettings);
+		mc.mcResourceManager = new SimpleReloadableResourceManager(mc.metadataSerializer_);
+		mc.mcLanguageManager = new LanguageManager(mc.metadataSerializer_, mc.gameSettings.language);
+		mc.mcResourceManager.registerReloadListener(mc.mcLanguageManager);
+		mc.refreshResources();
+		mc.renderEngine = new TextureManager(mc.mcResourceManager);
+		mc.mcResourceManager.registerReloadListener(mc.renderEngine);
+		mc.sndManager = new SoundManager(mc.mcResourceManager, mc.gameSettings, mc.fileAssets);
+		mc.sndManager.LOAD_SOUND_SYSTEM = false;
+		mc.mcResourceManager.registerReloadListener(mc.sndManager);
+		mc.loadScreen();
+		mc.fontRenderer = new FontRenderer(mc.gameSettings, new ResourceLocation("textures/font/ascii.png"), mc.renderEngine, false);
+		
+		FMLClientHandler.instance().beginMinecraftLoading(mc, mc.defaultResourcePacks, mc.mcResourceManager);
+		
+		if(mc.gameSettings.language != null) {
+			mc.fontRenderer.setUnicodeFlag(mc.mcLanguageManager.isCurrentLocaleUnicode());
+			mc.fontRenderer.setBidiFlag(mc.mcLanguageManager.isCurrentLanguageBidirectional());
+		}
+		
+		mc.standardGalacticFontRenderer = new FontRenderer(mc.gameSettings, new ResourceLocation("textures/font/ascii_sga.png"), mc.renderEngine, false);
+		mc.mcResourceManager.registerReloadListener(mc.fontRenderer);
+		mc.mcResourceManager.registerReloadListener(mc.standardGalacticFontRenderer);
+		mc.mcResourceManager.registerReloadListener(new GrassColorReloadListener());
+		mc.mcResourceManager.registerReloadListener(new FoliageColorReloadListener());
+		RenderManager.instance.itemRenderer = new ItemRenderer(mc);
+		mc.entityRenderer = new EntityRenderer(mc);
+		mc.statFileWriter = new StatFileWriter(mc.getSession(), mc.mcDataDir);
+		// AchievementList.openInventory.setStatStringFormatter(new StatStringFormatKeyInv(mc));
+		mc.mouseHelper = new MouseHelper();
+		checkGLError("Pre startup");
+		GL11.glEnable(GL11.GL_TEXTURE_2D);
+		GL11.glShadeModel(GL11.GL_SMOOTH);
+		GL11.glClearDepth(1.0D);
+		GL11.glEnable(GL11.GL_DEPTH_TEST);
+		GL11.glDepthFunc(GL11.GL_LEQUAL);
+		GL11.glEnable(GL11.GL_ALPHA_TEST);
+		GL11.glAlphaFunc(GL11.GL_GREATER, 0.1F);
+		GL11.glCullFace(GL11.GL_BACK);
+		GL11.glMatrixMode(GL11.GL_PROJECTION);
+		GL11.glLoadIdentity();
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
+		checkGLError("Startup");
+		mc.renderGlobal = new RenderGlobal(mc);
+		mc.renderEngine.loadTextureMap(TextureMap.locationBlocksTexture, new TextureMap(0, "textures/blocks"));
+		mc.renderEngine.loadTextureMap(TextureMap.locationItemsTexture, new TextureMap(1, "textures/items"));
+		GL11.glViewport(0, 0, mc.displayWidth, mc.displayHeight);
+		mc.effectRenderer = new EffectRenderer(mc.theWorld, mc.renderEngine);
+		FMLClientHandler.instance().finishMinecraftLoading();
+		checkGLError("Post startup");
+		mc.ingameGUI = new GuiIngameForge(mc);
+		
+		mc.displayGuiScreen(new GuiMainMenu());
+		
+		mc.loadingScreen = new LoadingScreenRenderer(mc);
+		
+		if(mc.gameSettings.fullScreen && !mc.isFullScreen()) {
+			mc.toggleFullscreen();
+		}
+		FMLClientHandler.instance().onInitializationComplete();
+	}
+	
 	public void runGameLoop() {
-		((ClientProxy)MainProxy.proxy).packetProcessor.tickEnd(null);
+		MainProxy.packetProcessor.tickEnd(null);
 		if(!init) {
 			init();
 			init = true;
@@ -120,16 +289,26 @@ public class Main {
             gui.renderGui(mc);
            	GL11.glPopMatrix();
         }
-       	mc.renderEngine.bindTexture(MOUSE_CURSOR);
-        if(displayMouse) {
-	       	GL11.glPushMatrix();
-	        GL11.glTranslated(mousePos_X, mousePos_Y, 1000);
-	        GL11.glScaled(0.02, 0.02, 1);
-	    	RenderHelper.drawTexturedModalRect(0, 0, 0, 0, 128 * 2, 128 * 2);
-	       	GL11.glPopMatrix();
-        }
 		RenderHelper.disableStandardItemLighting();
 
+		/*
+		 * TODO:
+		 * Temporary MapWriter Tests
+		 */
+		if(MapWriterHelper.instance().getMW().miniMap != null) {
+			MapWriterHelper.instance().updatePlayer();
+			MapWriterHelper.instance().getMW().miniMap.view.setViewCentreScaled(MapWriterHelper.instance().getMW().playerX, MapWriterHelper.instance().getMW().playerZ, 0);
+			MapWriterHelper.instance().getMW().miniMap.drawCurrentMap();
+			int maxTasks = 50;
+			while (!MapWriterHelper.instance().getMW().executor.processTaskQueue() && (maxTasks > 0)) {
+				maxTasks--;
+			}
+			MapWriterHelper.instance().getMW().mapTexture.processTextureUpdates();
+		} else {
+			MapWriterHelper.instance().init();
+		}
+		
+		
 		
 		GL11.glFlush();
 		//TODO handle Fullscreen
@@ -211,13 +390,6 @@ public class Main {
 	
 	private void init() {
 		mc.theWorld = new WorldClient(this);
-		/*
-		public WorldClient(Main main) {
-	    	super(new SaveHandlerMP(), "MpServer", new WorldSettings(0, EnumGameType.CREATIVE, false, false, WorldType.DEFAULT), null, new Profiler(), null);
-	    	this.isRemote = true;
-	        this.setSpawnLocation(8, 64, 8);
-	    }
-		*/
 		RenderManager.instance.cacheActiveRenderInfo(null, mc.getTextureManager(), mc.fontRenderer, new EntityPlayerSP(mc, mc.theWorld, mc.getSession(), 0), null, mc.gameSettings, 1);
 		//RenderManager.instance.itemRenderer = new ItemRenderer(mc);
 		mc.playerController = new PlayerControllerMP(mc, null);
@@ -227,21 +399,10 @@ public class Main {
 		currentGui.add(chatGui);
 		currentGui.add(skinGui);
 		currentGui.add(invGui);
-		ScaledResolution scaledresolution = new ScaledResolution(mc.gameSettings, mc.displayWidth, mc.displayHeight);
-		mousePos_X = scaledresolution.getScaledWidth() / 2;
-		mousePos_Y = scaledresolution.getScaledHeight() / 2;
 	}
 
-	public void updateMousePosition(int deltaX, int deltaY) {
-		ScaledResolution scaledresolution = new ScaledResolution(mc.gameSettings, mc.displayWidth, mc.displayHeight);
-		mousePos_X += deltaX * 0.5;
-		mousePos_Y -= deltaY * 0.5;
-		mousePos_X = Math.min(scaledresolution.getScaledWidth(), Math.max(0, mousePos_X));
-		mousePos_Y = Math.min(scaledresolution.getScaledHeight(), Math.max(0, mousePos_Y));
-	}
-	
-	public void setMouseDisplay(boolean flag) {
-		displayMouse = flag;
+	public void lockPlayer() {
+		playerreadLock.lock();
 	}
 
 	public EntityPlayerSP getPlayer() {
@@ -253,6 +414,10 @@ public class Main {
 			player.movementInput.moveForward = 0.5F;
 		}
 		return player;
+	}
+	
+	public void unlockPlayer() {
+		playerreadLock.unlock();
 	}
 
 	public static Main instance(Minecraft mc) {
