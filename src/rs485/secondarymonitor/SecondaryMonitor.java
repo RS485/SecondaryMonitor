@@ -20,9 +20,9 @@ package rs485.secondarymonitor;
 import java.util.logging.Logger;
 
 import rs485.secondarymonitor.connection.ConsolePacketHandler;
-import rs485.secondarymonitor.log.LoggingOutStream;
-import rs485.secondarymonitor.network.PacketHandler;
-import rs485.secondarymonitor.proxy.MainProxy;
+import rs485.secondarymonitor.firstjvm.log.LoggingOutStream;
+import rs485.secondarymonitor.firstjvm.network.PacketHandler;
+import rs485.secondarymonitor.firstjvm.proxy.MainProxy;
 import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;

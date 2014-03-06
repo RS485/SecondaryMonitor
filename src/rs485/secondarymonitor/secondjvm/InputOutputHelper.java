@@ -18,7 +18,7 @@ import rs485.secondarymonitor.connection.OutputThread;
 import rs485.secondarymonitor.connection.PlayerPositionReceiverThread;
 import rs485.secondarymonitor.connection.abstractpackets.ConsolePacket;
 import rs485.secondarymonitor.connection.packets.GuiStartedPacket;
-import rs485.secondarymonitor.proxy.MainProxy;
+import rs485.secondarymonitor.firstjvm.proxy.MainProxy;
 
 public class InputOutputHelper implements ISendConsolePacket {
 
@@ -73,6 +73,11 @@ public class InputOutputHelper implements ISendConsolePacket {
 		packet.create();
 		byte[] data = packet.getData();
 		output.queueData(data);
+	}
+
+	@Override
+	public boolean isActive() {
+		return output != null;
 	}
 	
 	public static InputOutputHelper instance() {

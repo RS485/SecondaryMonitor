@@ -15,6 +15,10 @@ import org.lwjgl.opengl.GL12;
 
 public class RenderHelper {
 	public static void drawRect(int par0, int par1, int par2, int par3, int par4) {
+		drawRect(par0, par1, par2, par3, par4, 0D);
+	}
+	
+	public static void drawRect(int par0, int par1, int par2, int par3, int par4, double z) {
 		int j1;
 		
 		if(par0 < par2) {
@@ -39,10 +43,10 @@ public class RenderHelper {
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 		GL11.glColor4f(f1, f2, f3, f);
 		tessellator.startDrawingQuads();
-		tessellator.addVertex((double)par0, (double)par3, 0.0D);
-		tessellator.addVertex((double)par2, (double)par3, 0.0D);
-		tessellator.addVertex((double)par2, (double)par1, 0.0D);
-		tessellator.addVertex((double)par0, (double)par1, 0.0D);
+		tessellator.addVertex((double)par0, (double)par3, z);
+		tessellator.addVertex((double)par2, (double)par3, z);
+		tessellator.addVertex((double)par2, (double)par1, z);
+		tessellator.addVertex((double)par0, (double)par1, z);
 		tessellator.draw();
 		GL11.glEnable(GL11.GL_TEXTURE_2D);
 		GL11.glDisable(GL11.GL_BLEND);

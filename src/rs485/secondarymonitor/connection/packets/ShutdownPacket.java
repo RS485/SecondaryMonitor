@@ -5,7 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 import rs485.secondarymonitor.connection.abstractpackets.ConsolePacket;
-import cpw.mods.fml.client.FMLClientHandler;
+import rs485.secondarymonitor.firstjvm.JVMHandler;
 
 public class ShutdownPacket extends ConsolePacket {
 	
@@ -18,7 +18,7 @@ public class ShutdownPacket extends ConsolePacket {
 	
 	@Override
 	public void processPacket() {
-		FMLClientHandler.instance().getClient().shutdown();
+		JVMHandler.instance().remoteShutdown();
 	}
 	
 	@Override

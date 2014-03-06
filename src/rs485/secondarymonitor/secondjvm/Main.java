@@ -66,7 +66,7 @@ import org.lwjgl.util.glu.GLU;
 
 import rs485.secondarymonitor.connection.ConsolePacketHandler;
 import rs485.secondarymonitor.connection.packets.ShutdownPacket;
-import rs485.secondarymonitor.proxy.MainProxy;
+import rs485.secondarymonitor.firstjvm.proxy.MainProxy;
 import rs485.secondarymonitor.secondjvm.gui.ChatGui;
 import rs485.secondarymonitor.secondjvm.gui.GuiPlayerSkin;
 import rs485.secondarymonitor.secondjvm.gui.ISDMGui;
@@ -85,11 +85,13 @@ public class Main {
 	protected final ReentrantReadWriteLock playerLock = new ReentrantReadWriteLock();
 	public final Lock playerreadLock = playerLock.readLock();
 	public final Lock playerwriteLock = playerLock.writeLock();
+	public boolean mainHasWorld = false;
 	
 	//All available GUIs
 	public ChatGui chatGui = new ChatGui();
 	public GuiPlayerSkin skinGui = new GuiPlayerSkin();
 	public PlayerInventoryGui invGui = new PlayerInventoryGui();
+	private ResourceLocation TITLE_SCREEN = new ResourceLocation("secondarymonitor", "textures/title_screen.png");
 	
 	public Main(Minecraft mc) {
 		this.mc = mc;
@@ -230,6 +232,9 @@ public class Main {
 			init();
 			init = true;
 		}
+		ScaledResolution scaledresolution = new ScaledResolution(mc.gameSettings, mc.displayHeight, mc.displayWidth);
+		int width = scaledresolution.getScaledWidth();
+		int heigth = scaledresolution.getScaledHeight();
 		
 		AxisAlignedBB.getAABBPool().cleanPool();
 		
@@ -270,23 +275,31 @@ public class Main {
 			//mc.entityRenderer.updateCameraAndRender(mc.timer.renderPartialTicks);
 			//FMLCommonHandler.instance().onRenderTickEnd(mc.timer.renderPartialTicks);
 		//}
-		
-        GL11.glViewport(0, 0, this.mc.displayWidth, this.mc.displayHeight);
-        GL11.glMatrixMode(GL11.GL_PROJECTION);
-        GL11.glLoadIdentity();
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        GL11.glLoadIdentity();
-        mc.entityRenderer.setupOverlayRendering();
-        
+		if(mc.entityRenderer.lightmapUpdateNeeded) {
+			mc.entityRenderer.updateLightmap(mc.timer.renderPartialTicks);
+		}
+		GL11.glViewport(0, 0, this.mc.displayWidth, this.mc.displayHeight);
+		GL11.glMatrixMode(GL11.GL_PROJECTION);
+		GL11.glLoadIdentity();
+		GL11.glMatrixMode(GL11.GL_MODELVIEW);
+		GL11.glLoadIdentity();
+		mc.entityRenderer.setupOverlayRendering();
         
         GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
-		RenderHelper.enableStandardItemLighting();
-        GL11.glPushMatrix();
-        RenderHelper.drawRect(0, 0, mc.displayHeight, mc.displayWidth, 0xff000000);
-       	GL11.glPopMatrix();
-       	for(ISDMGui gui: currentGui) {
+		GL11.glPushMatrix();
+		RenderHelper.drawRect(0, 0, mc.displayHeight, mc.displayWidth, 0xff000000, -1000D);
+        GL11.glPopMatrix();
+        RenderHelper.enableStandardItemLighting();
+        if(mainHasWorld) {
+	        for(ISDMGui gui: currentGui) {
+	       		GL11.glPushMatrix();
+	            gui.renderGui(mc);
+	           	GL11.glPopMatrix();
+	        }
+        } else {
        		GL11.glPushMatrix();
-            gui.renderGui(mc);
+        	mc.renderEngine.bindTexture(TITLE_SCREEN);
+        	RenderHelper.drawTexturedModalRect(50, 50, 0, 0, 1920, 1028);
            	GL11.glPopMatrix();
         }
 		RenderHelper.disableStandardItemLighting();
@@ -364,7 +377,6 @@ public class Main {
 
 	private void checkGLError(String par1Str) {
 		int i = GL11.glGetError();
-		
 		if(i != 0) {
 			String s1 = GLU.gluErrorString(i);
 			mc.getLogAgent().logSevere("########## GL ERROR ##########");

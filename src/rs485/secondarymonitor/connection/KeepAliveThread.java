@@ -14,6 +14,7 @@ public class KeepAliveThread extends Thread {
 	@Override
 	public void run() {
 		while(true) {
+			if(!sender.isActive()) return;
 			sender.sendConsolePacket(ConsolePacketHandler.getPacket(KeepAlivePacket.class));
 			try {
 				Thread.sleep(1000);
